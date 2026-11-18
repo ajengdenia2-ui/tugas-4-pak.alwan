@@ -1,0 +1,49 @@
+
+name: Build EXE
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install MSYS2
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: true
+          install: mingw-w64-x86_64-gcc
+
+      - name: Compile
+        shell: msys2 {0}
+        run: |
+          g++ --version
+          g++ -std=c++17 -O2 -static main.cpp -o program.exe
+
+      - name: Check EXE
+        shell: pwsh
+        run: |
+          if (-not (Test-Path "program.exe")) {
+            Write-Error "Compilation failed!"
+            exit 1
+          }
+
+          Write-Host "EXE successfully created!"
+
+      - name: Upload EXE
+        uses: actions/upload-artifact@v4
+        with:
+          name: Windows-EXE
+          path: program.exe
+          if-no-files-found: error
